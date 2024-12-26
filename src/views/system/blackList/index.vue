@@ -123,7 +123,7 @@
       <el-table-column label="委托代理人" align="center" prop="agentName" />
       <el-table-column label="委托代理人身份证号" align="center" prop="agentId" />
       <el-table-column label="不合格原因" align="center" prop="failReason" />
-      <el-table-column label="备注" align="center" prop="Notes" />
+      <el-table-column label="备注" align="center" prop="notes" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
@@ -246,6 +246,7 @@ export default {
     getList() {
       this.loading = true;
       listBancompany(this.queryParams).then(response => {
+        console.log("表单元素为"+JSON.stringify(response.rows));
         this.bancompanyList = response.rows;
         this.total = response.total;
         this.loading = false;
