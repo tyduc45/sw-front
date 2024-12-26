@@ -35,11 +35,11 @@ module.exports = {
     open: true,
     proxy: {
       // detail: https://cli.vuejs.org/config/#devserver-proxy
-      '/dev-api': {
+      [process.env.VUE_APP_BASE_API]: {
         target: `http://localhost:28880`,
         changeOrigin: true,
         pathRewrite: {
-          '^/dev-api': ''
+          ['^' + process.env.VUE_APP_BASE_API]: ''
         }
       }
     },

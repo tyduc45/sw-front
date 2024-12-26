@@ -19,10 +19,10 @@
       </el-form-item>
       <el-form-item label="出生日期" prop="DateOfBirth">
         <el-date-picker clearable
-          v-model="queryParams.DateOfBirth"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择出生日期">
+                        v-model="queryParams.DateOfBirth"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                        placeholder="请选择出生日期">
         </el-date-picker>
       </el-form-item>
       <el-form-item label="年龄" prop="Age">
@@ -216,7 +216,7 @@
         :before-upload="beforeUpload"
         :on-success="handleImportSuccess"
         :on-error="handleImportError"
-        action="/dev-api/system/banfarm/importData"
+        :action="url"
         name="file"
         :with-credentials="true"
         :headers="uploadHeaders"
@@ -251,10 +251,10 @@
         </el-form-item>
         <el-form-item label="出生日期" prop="DateOfBirth">
           <el-date-picker clearable
-            v-model="form.DateOfBirth"
-            type="date"
-            value-format="yyyy-MM-dd"
-            placeholder="请选择出生日期">
+                          v-model="form.DateOfBirth"
+                          type="date"
+                          value-format="yyyy-MM-dd"
+                          placeholder="请选择出生日期">
           </el-date-picker>
         </el-form-item>
         <el-form-item label="年龄" prop="Age">
@@ -323,7 +323,7 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
-
+      url: process.env.VUE_APP_BASE_API + "/system/banfarm/importData",
       importDialogVisible: false,
       uploadHeaders: {
         // 例如如果需要token认证，可在此添加Authorization头
