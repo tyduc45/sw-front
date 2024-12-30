@@ -124,8 +124,10 @@ service.interceptors.response.use(res => {
 
 // 通用下载方法
 export function download(url, params, filename, config) {
+  console.log('请求参数:', params);
+
   downloadLoadingInstance = Loading.service({ text: "正在下载数据，请稍候", spinner: "el-icon-loading", background: "rgba(0, 0, 0, 0.7)", })
-  return service.post(url, params, {
+  return service.post(url, JSON.stringify(params), {
     transformRequest: [(params) => { return tansParams(params) }],
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     responseType: 'blob',
