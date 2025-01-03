@@ -58,7 +58,7 @@
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
-        >导出/生成模板</el-button>
+        >导出</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       <el-col :span="1.5">
@@ -84,13 +84,10 @@
           {{ item.name }}
         </el-tag>
       </div>
-
-      <!-- 清空选中项 -->
-      <el-button @click="clearSelectedItems">清空</el-button>
     </div>
 
 
-    <el-table v-loading="loading" :data="banfarmList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="banfarmList" @selection-change="handleSelectionChange" ref="table">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="id" />
       <el-table-column label="姓名" align="center" prop="name" />
@@ -167,7 +164,11 @@
       >
           <i class="el-icon-upload"></i>
           <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <div class="el-upload__tip" slot="tip">只支持xlsx、xls格式的Excel文件</div>
+          <div class="el-upload__tip" slot="tip">只支持xlsx、xls格式的Excel文件，
+            <em @click="downloadTemplate" style="cursor: pointer; color: blue;">
+              点击下载模板
+            </em>
+          </div>
       </el-upload>
 
       <span slot="footer" class="dialog-footer">
@@ -191,7 +192,7 @@
           <el-input v-model="buff_form.Name" placeholder="中文姓名"  @blur="validateName"/>
         </el-form-item>
         <el-form-item label="身份证号" prop="IDNumber">
-          <el-input v-model="buff_form.IDNumber" placeholder="身份证号" maxlength="18" show-word-limit  @blur="validateID(buff_form.IDNumber)"/>
+          <el-input v-model="buff_form.IDNumber" placeholder="身份证号" maxlength="18" show-word-limit  @blur="handleBlur(buff_form.IDNumber,banfarmList,$message)"/>
         </el-form-item>
         <!--性别身份证号得出-->
         <!--出生日期身份证号得出-->
@@ -206,7 +207,7 @@
           <el-input v-model="buff_form.PhoneNumber" placeholder="手机号码" maxlength="11" show-word-limit />
         </el-form-item>
         <!--工种是选项而不是输入-->
-            <el-form-item label="工种" prop="jobStatus">
+            <el-form-item label="工种" prop="jobStatus" placeholder="输入或选择工种">
                 <el-select
                   v-model="buff_form.JobStatus"
                   placeholder="输入/选择工种"
@@ -223,10 +224,7 @@
               </el-select>
             </el-form-item>
             <!-- 提交按钮 -->
-            <el-form-item>
-              <el-button type="primary" @click="submitForm">提交</el-button>
-              <el-button @click="reset">重置</el-button>
-            </el-form-item>
+
         <el-form-item label="失信行为" prop="DishonestBehaviorDescription">
           <el-input v-model="buff_form.DishonestBehaviorDescription" type="textarea" placeholder="内容" />
         </el-form-item>
@@ -326,6 +324,16 @@ export default {
   },
   methods: {
     validateID,
+    handleBlur(IDNumber,banfarmList,messageFn) {
+        const result = validateID(IDNumber, banfarmList,messageFn);
+
+        if (!result.valid) {
+          this.buff_form.IDNumber = ''; // 清空输入框内容
+        }
+
+        return result;
+      },
+
     /** 查询农民工黑名单列表 */
     getList() {
       this.loading = true;
@@ -442,8 +450,7 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      this.reset();
-      const id = row.id || this.ids
+      const id = row.id || this.ids;
       getBanfarm(id).then(response => {
         this.buff_form = response.data;
         this.open = true;
@@ -459,7 +466,6 @@ export default {
           this.getBaseInfo(form,id)
           //缓冲区内容注入真实表单
           this.form = this.buff_form
-
           if (this.form.id != null) {
             updateBanfarm(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -479,12 +485,55 @@ export default {
     /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids;
-      this.$modal.confirm('是否确认删除农民工黑名单编号为"' + ids + '"的数据项？').then(function() {
+      const delList = this.selectedItems.filter(item => ids.includes(item.id));
+
+      // 将 ids 和 delList 合并成键值对
+      const id_name = delList.reduce((acc, item) => {
+        if (ids.includes(item.id)) {
+          acc[item.id] = item.name; // 假设 delList 的元素包含 id 和 name 属性
+        }
+        return acc;
+      }, {});
+      const formattedIdName = Object.entries(id_name)
+        .map(([id, name]) => `${id}: ${name}`)
+        .join(', ');
+
+      if(!this.banfarmList.find(item => ids.includes(item.id))) {
+        this.$message.error("请先选中")
+        return;
+      }
+      this.$modal.confirm('以下数据将被删除："' + formattedIdName +'" 请确认').then(function() {
         return delBanfarm(ids);
       }).then(() => {
+        this.selectedItems = [];
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+
+    //验证是否出现重复身份证
+    hasDuplicatedIDNumber()
+    {
+      //得到所有人身份证信息
+      const idNumbers = this.banfarmList.map(item => item.IDNumber)
+      // 统计出现次数
+      const duplicates = idNumbers.reduce((acc,id) =>
+      {
+        acc[id] = (acc[id] || 0) +1;
+        return acc;
+      },{});
+      // 筛选出出现次数大于 1 的元素
+      const result = Object.entries(duplicates)
+        .filter(([id, count]) => count > 1)
+        .map(([id]) => id);
+
+      if(result !== undefined)
+      {
+        this.$message.error("出现相同的身份证号,请搜索确认" + result)
+        return false;
+      }
+      else
+        return true;
     },
 
     // 处理选中项变化
@@ -520,13 +569,17 @@ export default {
     getSelectedItems() {
       return this.selectedItems;
     },
-
-    // 清除选中项
-    clearSelectedItems() {
-      this.selectedItems = [];
-      this.banfarmList.forEach(item => {
-        item.checked = false;
-      });
+    removeSelectedItem(item){
+      // 移除选中项
+      this.selectedItems = this.selectedItems.filter(
+        selected => selected.id !== item.id
+      );
+      // 更新表格选中状态
+      const table = this.$refs.table;
+      const rowIndex = this.banfarmList.findIndex(row => row.id === item.id);
+      if (rowIndex !== -1) {
+        table.toggleRowSelection(this.banfarmList[rowIndex], false);
+      }
     },
     beforeUpload(file) {
       const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
@@ -554,10 +607,10 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       // 获取选中的行
-      const selectedRows = this.banfarmList.filter(item => item.checked);
+      const selectedRows = this.selectedItems.filter(item => item.checked);
 
-      if (selectedRows.length === 0 && this.banfarmList.length !== 0) {
-        this.$message.error('请先选择要导出的数据');
+      if (selectedRows.length === 0) {
+        this.$message.error('请先选中要到导出的条目');
         return;
       }
 
@@ -579,11 +632,47 @@ export default {
         Notes: row.Notes
       }));
 
+      // 获取当前时间并格式化
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
 
-      // 将选中数据发送到服务器或下载
-      this.download('system/banfarm/export', {
+// 动态生成文件名
+      const fileName = `${formattedDate}农民工黑名单列表.xlsx`;
+
+// 调用下载方法
+      this.download('/system/banfarm/export', {
         selectedData: exportData
-      }, `banfarm_${new Date().getTime()}.xlsx`);
+      }, fileName);
+    },
+
+    downloadTemplate() {
+      // 获取选中的行
+      const selectedRows = [];
+
+      // 准备导出的数据
+      const exportData = selectedRows.map(row => ({
+        id: row.id,
+        Name: row.Name,
+        Gender: row.Gender,
+        DateOfBirth: row.DateOfBirth,
+        Age: row.Age,
+        Ethnicity: row.Ethnicity,
+        IDNumber: row.IDNumber,
+        Address: row.Address,
+        PhoneNumber: row.PhoneNumber,
+        JobStatus: row.JobStatus,
+        DishonestBehaviorDescription: row.DishonestBehaviorDescription,
+        Company: row.Company,
+        PersonalUnionAccount: row.PersonalUnionAccount,
+        Notes: row.Notes
+      }));
+
+      const fileName = `黑名单填写样板.xlsx`;
+
+// 调用下载方法
+      this.download('/system/banfarm/export', {
+        selectedData: exportData
+      }, fileName);
     }
   }
 };
@@ -613,4 +702,8 @@ export default {
 .el-upload__text em {
   color: #409eff; /* 突出显示的文本颜色 */
 }
+.el-upload__tip em {
+  color:#409eff;
+}
+
 </style>

@@ -1,13 +1,26 @@
 /**
  * 校验 18 位身份证号码，并返回错误信息或通过
  * @param {string} idCard
+ * @param {list} workerList
+ * @param messageFn
  * @returns {object} { valid: boolean, message: string }
  */
-export function validateID(idCard) {
+export function validateID(idCard ,workerList,messageFn) {
+    if (!idCard) {
+      messageFn.warning('身份证号不能为空！');
+      return;
+    }
+  // 检查是否已存在于 workerList
+  const isDuplicate = workerList.some(worker => worker.IDNumber === idCard);
+
+  if (isDuplicate) {
+    messageFn.error('该身份证号已经存在')
+    return {valid: false, message: '该身份证号已经存在!'};
+  }
   // 正则先判断基本结构
   const reg = /^\d{17}[\dX]$/;
   if (!reg.test(idCard) && idCard !== undefined) {
-    this.$message.error('身份证长度或格式不正确')
+    messageFn.error('身份证长度或格式不正确')
     return { valid: false, message: '身份证长度或格式不正确' };
   }
 
@@ -21,22 +34,22 @@ export function validateID(idCard) {
   let date = new Date();
 
   if (year < 1900 || year > date.getFullYear()) {
-    this.$message.error('出生年份不合法')
+    messageFn.error('出生年份不合法')
     return { valid: false, message: '出生年份不合法' };
   }
   if (month < 1 || month > 12) {
-    this.$message.error('出生月份不合法')
+    messageFn.error('出生月份不合法')
     return { valid: false, message: '出生月份不合法' };
   }
   /**if (day < 1 || day > 31) {
-    this.$message.error('出生日期不合法')
+    messageFn.error('出生日期不合法')
     return { valid: false, message: '出生日期不合法' };
   }*/
   if(month === 2 && year % 4 === 0)
   {
     if(day < 1 || day > 29)
     {
-      this.$message.error('出生日期不合法')
+      messageFn.error('出生日期不合法')
       return { valid: false, message: '出生日期不合法' };
     }
   }
@@ -44,14 +57,14 @@ export function validateID(idCard) {
   {
     if(day < 1 || day > 28)
     {
-      this.$message.error('出生日期不合法')
+      messageFn.error('出生日期不合法')
       return { valid: false, message: '出生日期不合法' };
     }
   }
   else
   {
     if (day < 1 || day > 31) {
-      this.$message.error('出生日期不合法')
+      messageFn.error('出生日期不合法')
       return { valid: false, message: '出生日期不合法' };
     }
   }
@@ -68,7 +81,7 @@ export function validateID(idCard) {
   const lastChar = idCard.charAt(17);
 
   if (checkCode !== lastChar) {
-    this.$message.error('校验码错误')
+    messageFn.error('校验码错误')
     return { valid: false, message: '校验码错误' };
   }
 
