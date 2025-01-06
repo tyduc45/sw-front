@@ -1,44 +1,44 @@
 import request from '@/utils/request'
 
-// 查询中国中铁不合格分包企业名录列表
-export function listBancompany(query) {
+// 查询公司黑名单列表
+export function listBanCompany(query) {
   return request({
-    url: '/manage/bancompany/list',
+    url: '/system/banCompany/list',
     method: 'get',
     params: query
   })
 }
 
-// 查询中国中铁不合格分包企业名录详细
-export function getBancompany(Id) {
+// 查询公司黑名单详细
+export function getBanCompany(id) {
   return request({
-    url: '/manage/bancompany/' + Id,
+    url: '/system/banCompany/' + id,
     method: 'get'
   })
 }
 
-// 新增中国中铁不合格分包企业名录
-export function addBancompany(data) {
+// 新增公司黑名单
+export function addBanCompany(data) {
   return request({
-    url: '/manage/bancompany',
+    url: '/system/banCompany',
     method: 'post',
     data: data
   })
 }
 
-// 修改中国中铁不合格分包企业名录
-export function updateBancompany(data) {
+// 修改公司黑名单
+export function updateBanCompany(data) {
   return request({
-    url: '/manage/bancompany',
+    url: '/system/banCompany',
     method: 'put',
     data: data
   })
 }
 
-// 删除中国中铁不合格分包企业名录
-export function delBancompany(Id) {
+// 删除公司黑名单
+export function delBanCompany(id) {
   return request({
-    url: '/manage/bancompany/' + Id,
+    url: '/system/banCompany/' + id,
     method: 'delete'
   })
 }
